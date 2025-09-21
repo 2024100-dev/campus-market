@@ -2,81 +2,40 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>校园二手市场</title>
+  <title>校园交易市场</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background: #f4f4f9;
-    }
-    h1 {
-      text-align: center;
-      color: #333;
-    }
-    form {
-      max-width: 500px;
-      margin: 20px auto;
-      padding: 20px;
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    label {
-      display: block;
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    input, textarea {
-      width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    button {
-      margin-top: 15px;
-      padding: 10px;
-      background: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      width: 100%;
-    }
-    button:hover {
-      background: #45a049;
-    }
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
+    h1, h2 { color: #333; }
+    form { margin-bottom: 20px; padding: 15px; background: #fff; border-radius: 8px; }
+    input, button { margin: 5px 0; padding: 8px; width: 100%; }
+    button { background: #4CAF50; color: #fff; border: none; cursor: pointer; border-radius: 5px; }
+    button:hover { background: #45a049; }
+    .product { background: #fff; border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; }
+    .product img { max-width: 150px; display: block; margin: 5px 0; border-radius: 5px; }
   </style>
 </head>
 <body>
-  <h1>校园二手市场 - 永平中学</h1>
+  <h1>校园交易市场</h1>
 
+  <h2>上传商品</h2>
   <form id="productForm">
-    <label for="name">商品名称</label>
-    <input type="text" id="name" name="name" required>
-
-    <label for="description">商品描述</label>
-    <textarea id="description" name="description" rows="3"></textarea>
-
-    <label for="price">价格</label>
-    <input type="text" id="price" name="price" required>
-
-    <label for="contact">联系方式</label>
-    <input type="text" id="contact" name="contact" required>
-
-    <label for="location">交易地点</label>
-    <input type="text" id="location" name="location" placeholder="例如：永平中学食堂门口">
-
-    <label for="image">上传图片</label>
-    <input type="file" id="image" name="image" accept="image/*">
-
-    <button type="submit">提交商品</button>
+    <input type="text" id="name" placeholder="商品名称" required><br>
+    <input type="text" id="description" placeholder="描述"><br>
+    <input type="number" id="price" placeholder="价格"><br>
+    <input type="text" id="contact" placeholder="联系方式"><br>
+    <input type="text" id="location" placeholder="地点"><br>
+    <input type="file" id="image" accept="image/*"><br>
+    <button type="submit">提交</button>
   </form>
 
-  <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwkgSf3YIwTi5_Z5Wd7cV3dcqCDzI9eGm86KCBJHbZrUVGKanzn1r7OelJ7NTomzcST/exec";
+  <h2>商品展示</h2>
+  <div id="products"></div>
 
+  <script>
+    // ⚠️ 改成你的 Apps Script 部署 URL（exec 结尾）
+    const API_URL = "https://script.google.com/macros/s/AKfycbxk96A2Vs7yoEO-fnRDH8qtAjXNdcgMR2jakCeNTPbf0cZJYJi1w3s0S-wAa-clODvl/exec";
+
+    // 提交商品
     document.getElementById("productForm").addEventListener("submit", async (e) => {
       e.preventDefault();
 
@@ -85,47 +44,71 @@
         description: document.getElementById("description").value,
         price: document.getElementById("price").value,
         contact: document.getElementById("contact").value,
-        location: document.getElementById("location").value,
+        location: document.getElementById("location").value
       };
 
-      // 处理图片上传（转成 base64）
+      // 处理图片
       const fileInput = document.getElementById("image");
       if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        formData.image = await toBase64(file);
+        formData.image = await toBase64(fileInput.files[0]);
       }
 
-      try {
-        const res = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        });
+      // 发送到 Apps Script
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
 
-        const result = await res.json();
-        if (result.success) {
-          alert("提交成功！");
-          document.getElementById("productForm").reset();
-        } else {
-          alert("提交失败: " + result.message);
-        }
-      } catch (err) {
-        alert("提交失败: " + err.message);
-      }
+      const result = await res.json();
+      alert(result.message);
+
+      // 清空表单
+      e.target.reset();
+      loadProducts();
     });
 
-    // 文件转 base64
+    // 文件转 Base64
     function toBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = () => resolve(reader.result);
-        reader.onerror = (error) => reject(error);
+        reader.onerror = reject;
       });
     }
+
+    // 加载商品
+    async function loadProducts() {
+      const res = await fetch(API_URL);
+      const result = await res.json();
+      const productsDiv = document.getElementById("products");
+      productsDiv.innerHTML = "";
+
+      if (result.success) {
+        result.products.forEach(p => {
+          const div = document.createElement("div");
+          div.className = "product";
+          div.innerHTML = `
+            <h3>${p.name}</h3>
+            <p>${p.description}</p>
+            ${p.image ? `<img src="${p.image}" alt="商品图片">` : ""}
+            <p><strong>价格:</strong> ${p.price}</p>
+            <p><strong>联系方式:</strong> ${p.contact}</p>
+            <p><strong>地点:</strong> ${p.location}</p>
+          `;
+          productsDiv.appendChild(div);
+        });
+      }
+    }
+
+    // 页面加载时执行
+    loadProducts();
   </script>
 </body>
 </html>
+
+
 
 
 
