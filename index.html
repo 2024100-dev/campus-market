@@ -9,6 +9,8 @@
     input, button { margin: 5px 0; padding: 8px; width: 100%; }
     .item { border: 1px solid #ddd; padding: 10px; margin: 10px 0; }
     .item img { max-width: 200px; display: block; margin-top: 10px; }
+    .btn { margin-top: 10px; padding: 6px 12px; background: #4CAF50; color: #fff; border: none; cursor: pointer; }
+    .btn:hover { background: #45a049; }
   </style>
 </head>
 <body>
@@ -28,8 +30,7 @@
   <div id="items"></div>
 
   <script>
-    // 改成你自己的 Apps Script 部署 URL
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbDQlEGlQQrhjlzrvaEGAlKxlv9moO2vp8q1d5P00zgQx1W_wWIYLp94AuAqwqls9Q/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyqWHNz8AdVX3zE2cM5Lz2ycL9vetgKrCtzLmdnHAkTfsub7VyfFuPzn8f-Snhz92KR/exec";
 
     // 提交表单
     document.getElementById("uploadForm").addEventListener("submit", async (e) => {
@@ -70,7 +71,7 @@
         const result = await res.json();
         if (result.status === "ok") {
           alert("上传成功！");
-          loadItems(); // 刷新商品列表
+          loadItems();
           document.getElementById("uploadForm").reset();
         } else {
           alert("上传失败: " + result.message);
@@ -99,6 +100,7 @@
             地点: ${item.location}<br>
             时间: ${item.time}<br>
             ${item.imageUrl ? `<img src="${item.imageUrl}" alt="商品图片">` : ""}
+            <button class="btn" onclick="generateCertificate('${encodeURIComponent(item.name)}','${encodeURIComponent(item.price)}','${encodeURIComponent(item.contact)}','${encodeURIComponent(item.location)}','${encodeURIComponent(item.imageUrl)}')">生成交易凭证</button>
           `;
           container.appendChild(div);
         });
@@ -107,9 +109,19 @@
       }
     }
 
-    // 页面加载时获取商品
+    // 生成 PDF 凭证
+    async function generateCertificate(name, price, contact, location, imageUrl) {
+      const url = `${SCRIPT_URL}?name=${name}&price=${price}&contact=${contact}&location=${location}&imageUrl=${imageUrl}`;
+      const res = await fetch(url);
+      const result = await res.json();
+      if (result.status === "ok") {
+        window.open(result.url, "_blank");
+      } else {
+        alert("生成凭证失败: " + result.message);
+      }
+    }
+
     window.onload = loadItems;
   </script>
 </body>
 </html>
-
