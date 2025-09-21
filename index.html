@@ -6,136 +6,106 @@
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
     form { margin-bottom: 20px; }
-    input, button { margin: 5px 0; padding: 8px; width: 100%; }
-    .item { border: 1px solid #ddd; padding: 10px; margin: 10px 0; }
-    .item img { max-width: 200px; display: block; margin-top: 10px; }
-    .btn { margin: 5px; padding: 6px 12px; background: #4CAF50; color: #fff; border: none; cursor: pointer; }
-    .btn:hover { background: #45a049; }
+    .product { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
+    img { max-width: 150px; display: block; margin-top: 5px; }
   </style>
 </head>
 <body>
-  <h1>校园二手市场</h1>
+  <h1>🎓 校园二手市场</h1>
 
-  <form id="uploadForm">
-    <input type="text" id="name" placeholder="商品名称" required>
-    <input type="text" id="description" placeholder="描述">
-    <input type="number" id="price" placeholder="价格" required>
-    <input type="text" id="contact" placeholder="联系方式" required>
-    <input type="text" id="location" placeholder="交易地点" required>
-    <input type="file" id="image" accept="image/*">
+  <form id="productForm">
+    <input type="text" id="name" placeholder="商品名称" required><br>
+    <textarea id="description" placeholder="商品描述" required></textarea><br>
+    <input type="number" id="price" placeholder="价格" required><br>
+    <input type="text" id="contact" placeholder="联系方式" required><br>
+    <input type="text" id="location" placeholder="交易地点" required><br>
+    <input type="file" id="image" accept="image/*"><br>
     <button type="submit">提交商品</button>
   </form>
 
-  <h2>已发布商品</h2>
-  <div id="items"></div>
+  <h2>📋 商品列表</h2>
+  <div id="productList"></div>
+
+  <h2>✅ 测试 SVG 图标（已修复路径）</h2>
+  <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2">
+    <!-- ✅ 正确的 Path 写法 -->
+    <path d="M12 2 L19 21 H5 Z"></path>
+  </svg>
 
   <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwRNv5XnYgSOnDXASuju_5O3NCC2j2fTJiX8mIkSPVCEzaYgFGY14JpPrUnsjzQw6T3/exec";
+  // ⚠️ 换成你 Apps Script 部署的 URL
+  const API_URL = "https://script.google.com/macros/s/你的部署ID/exec";
 
-    // 提交表单
-    document.getElementById("uploadForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
+  document.getElementById("productForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-      const fileInput = document.getElementById("image");
-      const file = fileInput.files[0];
+    const file = document.getElementById("image").files[0];
+    let base64Image = "";
+    if (file) {
+      const reader = new FileReader();
+      base64Image = await new Promise((resolve) => {
+        reader.onload = () => resolve(reader.result.split(",")[1]);
+        reader.readAsDataURL(file);
+      });
+    }
 
-      let imageBase64 = "";
-      let imageType = "";
-      if (file) {
-        imageType = file.type;
-        const reader = new FileReader();
-        imageBase64 = await new Promise((resolve, reject) => {
-          reader.onload = () => resolve(reader.result.split(",")[1]);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-      }
+    const data = {
+      name: document.getElementById("name").value,
+      description: document.getElementById("description").value,
+      price: document.getElementById("price").value,
+      contact: document.getElementById("contact").value,
+      location: document.getElementById("location").value,
+      image: base64Image
+    };
 
-      const data = {
-        name: document.getElementById("name").value,
-        description: document.getElementById("description").value,
-        price: document.getElementById("price").value,
-        contact: document.getElementById("contact").value,
-        location: document.getElementById("location").value,
-        imageBase64,
-        imageType
-      };
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" }
+      });
 
-      try {
-        const res = await fetch(SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data)
-        });
+      const text = await res.text();
+      const result = JSON.parse(text);
 
-        const result = await res.json();
-        if (result.status === "ok") {
-          alert("上传成功！");
-          loadItems();
-          document.getElementById("uploadForm").reset();
-        } else {
-          alert("上传失败: " + result.message);
-        }
-      } catch (err) {
-        alert("网络错误: " + err);
-      }
-    });
+      alert(result.message || "提交完成");
+      loadProducts();
+    } catch (err) {
+      alert("提交失败: " + err.message);
+    }
+  });
 
-    // 加载商品列表
-    async function loadItems() {
-      try {
-        const res = await fetch(SCRIPT_URL);
-        const items = await res.json();
+  async function loadProducts() {
+    try {
+      const res = await fetch(API_URL);
+      const text = await res.text();
+      const result = JSON.parse(text);
 
-        const container = document.getElementById("items");
-        container.innerHTML = "";
-        items.reverse().forEach(item => {
+      if (result.status === "ok") {
+        const list = document.getElementById("productList");
+        list.innerHTML = "";
+        result.items.forEach(item => {
           const div = document.createElement("div");
-          div.className = "item";
+          div.className = "product";
           div.innerHTML = `
-            <strong>${item.name}</strong><br>
-            描述: ${item.description}<br>
-            价格: ${item.price}<br>
-            联系方式: ${item.contact}<br>
-            地点: ${item.location}<br>
-            时间: ${item.time}<br>
-            ${item.imageUrl ? `<img src="${item.imageUrl}" alt="商品图片">` : ""}
-            <br>
-            <button class="btn" onclick="generateCertificatePDF('${encodeURIComponent(item.name)}','${encodeURIComponent(item.price)}','${encodeURIComponent(item.contact)}','${encodeURIComponent(item.location)}','${encodeURIComponent(item.imageUrl)}')">生成 PDF 凭证</button>
-            <button class="btn" onclick="generateCertificateJPG('${encodeURIComponent(item.name)}','${encodeURIComponent(item.price)}','${encodeURIComponent(item.contact)}','${encodeURIComponent(item.location)}')">生成 JPG 凭证</button>
+            <h3>${item.name}</h3>
+            <p>${item.description}</p>
+            <img src="${item.image}" alt="商品图片">
+            <p>💰 ${item.price}</p>
+            <p>📞 ${item.contact}</p>
+            <p>📍 ${item.location}</p>
+            <p>⏰ ${item.time}</p>
           `;
-          container.appendChild(div);
+          list.appendChild(div);
         });
-      } catch (err) {
-        console.error("加载商品失败:", err);
       }
+    } catch (err) {
+      console.error("加载失败", err);
     }
+  }
 
-    // 生成 PDF
-    async function generateCertificatePDF(name, price, contact, location, imageUrl) {
-      const url = `${SCRIPT_URL}?action=certificatePDF&name=${name}&price=${price}&contact=${contact}&location=${location}&imageUrl=${imageUrl}`;
-      const res = await fetch(url);
-      const result = await res.json();
-      if (result.status === "ok") {
-        window.open(result.url, "_blank");
-      } else {
-        alert("生成 PDF 凭证失败: " + result.message);
-      }
-    }
-
-    // 生成 JPG
-    async function generateCertificateJPG(name, price, contact, location) {
-      const url = `${SCRIPT_URL}?action=certificateJPG&name=${name}&price=${price}&contact=${contact}&location=${location}`;
-      const res = await fetch(url);
-      const result = await res.json();
-      if (result.status === "ok") {
-        window.open(result.url, "_blank");
-      } else {
-        alert("生成 JPG 凭证失败: " + result.message);
-      }
-    }
-
-    window.onload = loadItems;
+  window.onload = loadProducts;
   </script>
 </body>
 </html>
+
