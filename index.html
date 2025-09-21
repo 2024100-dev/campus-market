@@ -2,103 +2,127 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>校园二手市场</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    form { margin-bottom: 20px; }
-    .product { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
-    img { max-width: 150px; display: block; margin-top: 5px; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f4f4f9;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    form {
+      max-width: 500px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      margin-top: 15px;
+      padding: 10px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover {
+      background: #45a049;
+    }
   </style>
 </head>
 <body>
-  <h1>🎓 校园二手市场</h1>
+  <h1>校园二手市场 - 永平中学</h1>
 
   <form id="productForm">
-    <input type="text" id="name" placeholder="商品名称" required><br>
-    <textarea id="description" placeholder="商品描述" required></textarea><br>
-    <input type="number" id="price" placeholder="价格" required><br>
-    <input type="text" id="contact" placeholder="联系方式" required><br>
-    <input type="text" id="location" placeholder="交易地点" required><br>
-    <input type="file" id="image" accept="image/*"><br>
+    <label for="name">商品名称</label>
+    <input type="text" id="name" name="name" required>
+
+    <label for="description">商品描述</label>
+    <textarea id="description" name="description" rows="3"></textarea>
+
+    <label for="price">价格</label>
+    <input type="text" id="price" name="price" required>
+
+    <label for="contact">联系方式</label>
+    <input type="text" id="contact" name="contact" required>
+
+    <label for="location">交易地点</label>
+    <input type="text" id="location" name="location" placeholder="例如：永平中学食堂门口">
+
+    <label for="image">上传图片</label>
+    <input type="file" id="image" name="image" accept="image/*">
+
     <button type="submit">提交商品</button>
   </form>
 
-  <h2>📋 商品列表</h2>
-  <div id="productList"></div>
-
   <script>
-  
-  const API_URL = "https://script.google.com/macros/s/AKfycbzQaVXKmyf1mHr0bx7POrszENDZH4ly56N3DcIcg9cgC6bcbbj9V7WcuX_mj8Z_doRM/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbyjSzQG6sZb3IMPiuGqmb0M-qwOUbw2NoshMMKZlb1YjMkrkAML4M49efBpgrVLd7Gf/exec";
 
-  document.getElementById("productForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
+    document.getElementById("productForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-    const file = document.getElementById("image").files[0];
-    let base64Image = "";
-    if (file) {
-      const reader = new FileReader();
-      base64Image = await new Promise((resolve) => {
-        reader.onload = () => resolve(reader.result.split(",")[1]);
-        reader.readAsDataURL(file);
-      });
-    }
+      const formData = {
+        name: document.getElementById("name").value,
+        description: document.getElementById("description").value,
+        price: document.getElementById("price").value,
+        contact: document.getElementById("contact").value,
+        location: document.getElementById("location").value,
+      };
 
-    const data = {
-      name: document.getElementById("name").value,
-      description: document.getElementById("description").value,
-      price: document.getElementById("price").value,
-      contact: document.getElementById("contact").value,
-      location: document.getElementById("location").value,
-      image: base64Image
-    };
-
-    try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" }
-      });
-
-      const text = await res.text();
-      const result = JSON.parse(text);
-
-      alert(result.message || "提交完成");
-      loadProducts();
-    } catch (err) {
-      alert("提交失败: " + err.message);
-    }
-  });
-
-  async function loadProducts() {
-    try {
-      const res = await fetch(API_URL);
-      const text = await res.text();
-      const result = JSON.parse(text);
-
-      if (result.status === "ok") {
-        const list = document.getElementById("productList");
-        list.innerHTML = "";
-        result.items.forEach(item => {
-          const div = document.createElement("div");
-          div.className = "product";
-          div.innerHTML = `
-            <h3>${item.name}</h3>
-            <p>${item.description}</p>
-            <img src="${item.image}" alt="商品图片">
-            <p>💰 ${item.price}</p>
-            <p>📞 ${item.contact}</p>
-            <p>📍 ${item.location}</p>
-            <p>⏰ ${item.time}</p>
-          `;
-          list.appendChild(div);
-        });
+      // 处理图片上传（转成 base64）
+      const fileInput = document.getElementById("image");
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        formData.image = await toBase64(file);
       }
-    } catch (err) {
-      console.error("加载失败", err);
-    }
-  }
 
-  window.onload = loadProducts;
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
+
+        const result = await res.json();
+        if (result.success) {
+          alert("提交成功！");
+          document.getElementById("productForm").reset();
+        } else {
+          alert("提交失败: " + result.message);
+        }
+      } catch (err) {
+        alert("提交失败: " + err.message);
+      }
+    });
+
+    // 文件转 base64
+    function toBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = (error) => reject(error);
+      });
+    }
   </script>
 </body>
 </html>
