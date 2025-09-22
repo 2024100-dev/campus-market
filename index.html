@@ -1,109 +1,56 @@
-<!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8">
-  <title>校园二手市场</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    form { margin-bottom: 30px; }
-    input, textarea { display: block; margin: 8px 0; width: 300px; }
-    button { padding: 6px 12px; }
-    .product { border: 1px solid #ccc; padding: 10px; margin: 10px; width: 250px; display: inline-block; vertical-align: top; }
-    .product img { width: 100%; max-height: 200px; object-fit: cover; }
-  </style>
-</head>
-<body>
-  <h1>校园二手市场</h1>
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbxVX1SSpuC7Lye7ybnzp15FoWmeb4VrpQD6K_mHQKcISQPo69xTJpd6xgb8ncbKRC0H/exec";
 
-  <h2>上传商品</h2>
-  <form id="productForm">
-    <input type="text" name="name" placeholder="商品名称" required>
-    <textarea name="description" placeholder="商品描述"></textarea>
-    <input type="file" name="image" accept="image/*">
-    <input type="text" name="price" placeholder="价格">
-    <input type="text" name="contact" placeholder="联系方式">
-    <input type="text" name="location" placeholder="交易地点">
-    <button type="submit">提交</button>
-  </form>
+document.getElementById("productForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const form = e.target;
 
-  <h2>商品列表</h2>
-  <div id="productList">加载中...</div>
+  const product = {
+    name: form.name.value,
+    description: form.description.value,
+    price: form.price.value,
+    contact: form.contact.value,
+    location: form.location.value
+  };
 
-  <script>
-    // 你的 Apps Script 部署 URL
-    const API_URL = "https://script.google.com/macros/s/AKfycbwjlraBxa9rPq8EradkmafXzXeZR29dsHjevUE-IBom80kxGYHlRi7ES1VNCCouG6Y1/exec";
-
-    // 上传商品
-    document.getElementById("productForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const form = e.target;
-      const reader = new FileReader();
-
-      const file = form.image.files[0];
-      let base64Image = "";
-      if (file) {
-        base64Image = await new Promise((resolve) => {
-          reader.onload = () => resolve(reader.result);
-          reader.readAsDataURL(file);
-        });
-      }
-
-      const product = {
-        name: form.name.value,
-        description: form.description.value,
-        image: base64Image,
-        price: form.price.value,
-        contact: form.contact.value,
-        location: form.location.value
-      };
-
-      try {
-        const res = await fetch(API_URL, {
-          method: "POST",
-          body: JSON.stringify(product),
-          headers: { "Content-Type": "application/json" }
-        });
-        const data = await res.json();
-        alert(data.message);
-        loadProducts(); // 重新加载商品
-      } catch (err) {
-        alert("上传失败: " + err.message);
-      }
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify(product),
+      headers: { "Content-Type": "application/json" }
     });
-
-    // 加载商品
-    async function loadProducts() {
-      try {
-        const res = await fetch(API_URL);
-        const data = await res.json();
-        console.log("API 返回:", data); // 🔍 调试
-        const list = document.getElementById("productList");
-        list.innerHTML = "";
-
-        if (data.success && data.products.length > 0) {
-          data.products.forEach(p => {
-            const div = document.createElement("div");
-            div.className = "product";
-            div.innerHTML = `
-              <h3>${p.name}</h3>
-              <img src="${p.image}" alt="${p.name}">
-              <p>${p.description}</p>
-              <p><b>价格:</b> ${p.price}</p>
-              <p><b>联系方式:</b> ${p.contact}</p>
-              <p><b>地点:</b> ${p.location}</p>
-            `;
-            list.appendChild(div);
-          });
-        } else {
-          list.textContent = "目前没有商品。";
-        }
-      } catch (err) {
-        document.getElementById("productList").textContent = "加载失败: " + err.message;
-      }
-    }
-
-    // 初始加载
+    const data = await res.json();
+    alert(data.message);
     loadProducts();
-  </script>
-</body>
-</html>
+  } catch (err) {
+    alert("上传失败: " + err.message);
+  }
+});
+
+async function loadProducts() {
+  const res = await fetch(API_URL);
+  const data = await res.json();
+  const list = document.getElementById("productList");
+  list.innerHTML = "";
+
+  if (data.success && data.products.length > 0) {
+    data.products.forEach(p => {
+      const div = document.createElement("div");
+      div.className = "product";
+      div.innerHTML = `
+        <h3>${p.name}</h3>
+        <p>${p.description}</p>
+        <p><b>价格:</b> ${p.price}</p>
+        <p><b>联系方式:</b> ${p.contact}</p>
+        <p><b>地点:</b> ${p.location}</p>
+      `;
+      list.appendChild(div);
+    });
+  } else {
+    list.textContent = "目前没有商品。";
+  }
+}
+
+loadProducts();
+</script>
+
